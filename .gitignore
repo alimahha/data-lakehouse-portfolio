@@ -4,3 +4,17 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
+# MinIO license and credentials
+*.license
+
+# Generated data and databases
+data/*.parquet
+data/*.duckdb
+
+# Python and test caches
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
