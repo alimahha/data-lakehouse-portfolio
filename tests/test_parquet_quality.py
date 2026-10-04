@@ -1,25 +1,57 @@
 
-from pathlib import Path
-
 import pandas as pd
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
+@pytest.fixture
+def athletes_silver(tmp_path):
+    df = pd.DataFrame(
+        {
+            "ID": [1, 2, 3],
+            "Age": [25, 28, 22],
+            "Height": [180.0, 175.0, 190.0],
+            "Weight": [75.0, 68.0, 85.0],
+            "Sport": ["Athletics", "Swimming", "Basketball"],
+            "Team": ["France", "Canada", "USA"],
+        }
+    )
+
+    filepath = tmp_path / "athlete_events_clean.parquet"
+    df.to_parquet(filepath, index=False)
+    return pd.read_parquet(filepath)
 
 
 @pytest.fixture
-def athletes_silver():
-    return pd.read_parquet(DATA_DIR / "athlete_events_clean.parquet")
+def fact_gold(tmp_path):
+    df = pd.DataFrame(
+        {
+            "athlete_id": [1, 2, 3],
+            "Sport": ["Athletics", "Swimming", "Basketball"],
+            "NOC": ["FRA", "CAN", "USA"],
+            "Games": ["2016 Summer", "2020 Summer", "2012 Summer"],
+            "Medal": ["Gold", None, "Bronze"],
+        }
+    )
+
+    filepath = tmp_path / "FactParticipation.parquet"
+    df.to_parquet(filepath, index=False)
+    return pd.read_parquet(filepath)
 
 
 @pytest.fixture
-def fact_gold():
-    return pd.read_parquet(DATA_DIR / "FactParticipation.parquet")
+def dim_athlete(tmp_path):
+    df = pd.DataFrame(
+        {
+            "athlete_id": [1, 2, 3],
+            "Name": ["Athlete A", "Athlete B", "Athlete C"],
+            "Sex": ["M", "F", "M"],
+            "Age": [25, 28, 22],
+        }
+    )
 
-
-@pytest.fixture
-def dim_athlete():
-    return pd.read_parquet(DATA_DIR / "DimAthlete.parquet")
+    filepath = tmp_path / "DimAthlete.parquet"
+    df.to_parquet(filepath, index=False)
+    return pd.read_parquet(filepath)
 
 
 def test_silver_file_is_not_empty(athletes_silver):
