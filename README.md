@@ -1,311 +1,222 @@
-# 🏅 Data Lakehouse & Data Engineering — Olympic Data
+# 🏅 Data Lakehouse & Data Engineering --- Olympic Data
 
 ## 📌 Présentation
 
-Ce projet académique met en œuvre un pipeline **Data Engineering de bout en bout** autour de données relatives aux Jeux Olympiques.
+Ce projet académique met en œuvre un pipeline **Data Engineering de bout
+en bout** autour de données relatives aux Jeux Olympiques.
 
-L'objectif est de construire une architecture de type **Data Lakehouse** suivant le principe de la **Medallion Architecture**, organisée en trois couches :
+L'objectif est de construire une architecture de type **Data Lakehouse**
+suivant le principe de la **Medallion Architecture** :
 
 **Bronze → Silver → Gold**
 
-Le projet couvre plusieurs étapes d'une chaîne Data :
+Le projet couvre : - ingestion des données ; - nettoyage et
+transformation ; - modélisation analytique ; - stockage Parquet ; -
+requêtage SQL avec DuckDB ; - stockage objet avec MinIO ; - contrôles de
+qualité ; - tests Pytest ; - intégration continue avec GitHub Actions
+; - visualisation avec Power BI.
 
-- ingestion des données ;
-- nettoyage et transformation ;
-- modélisation analytique ;
-- stockage au format Parquet ;
-- requêtage SQL avec DuckDB ;
-- stockage objet avec MinIO ;
-- contrôles de qualité des données ;
-- tests automatisés avec Pytest ;
-- intégration continue avec GitHub Actions.
+## 🎯 Problématique métier
 
-La couche Gold produit un modèle analytique structuré autour de dimensions et d'une table de faits, destiné à être exploité par des outils d'analyse et de visualisation.
+> **Comment analyser l'évolution de la participation olympique et
+> identifier les tendances selon les pays, les sports, les athlètes et
+> les éditions ?**
 
----
+Le dashboard Power BI permet notamment d'analyser les participations,
+athlètes, médailles, éditions, pays, sports, sexe et saisons olympiques.
 
-# 🏗️ Architecture
+## 🏗️ Architecture
 
-Le projet suit une architecture **Medallion** en trois couches.
-
-```text
-                         SOURCES DE DONNÉES
-                                │
-                                ▼
-                    ┌─────────────────────┐
-                    │       BRONZE        │
-                    │   Données brutes    │
-                    │                     │
-                    │ athlete_events.csv  │
-                    │ wikidata_olympic.csv│
-                    └──────────┬──────────┘
-                               │
-                               │ Nettoyage
-                               │ Transformation
-                               ▼
-                    ┌─────────────────────┐
-                    │       SILVER        │
-                    │ Données nettoyées   │
-                    │                     │
-                    │ Parquet             │
-                    │ Contrôles qualité   │
-                    └──────────┬──────────┘
-                               │
-                               │ Modélisation
-                               │ analytique
-                               ▼
-                    ┌─────────────────────┐
-                    │        GOLD         │
-                    │ Données analytiques │
-                    │                     │
-                    │ DimAthlete          │
-                    │ DimSport            │
-                    │ DimOlympics         │
-                    │ DimCountry          │
-                    │ FactParticipation   │
-                    └──────────┬──────────┘
-                               │
-                 ┌─────────────┴─────────────┐
-                 │                           │
-                 ▼                           ▼
-          ┌─────────────┐             ┌─────────────┐
-          │   DuckDB    │             │    MinIO    │
-          │ SQL /       │             │ Object      │
-          │ Analytics   │             │ Storage     │
-          └─────────────┘             └─────────────┘
-                                            │
-                                            ▼
-                                      Power BI
-                                     (à venir)
+``` text
+Sources
+  │
+  ▼
+BRONZE ── données brutes
+  │
+  ▼
+SILVER ── données nettoyées / Parquet
+  │
+  ▼
+GOLD ──── modèle analytique
+  │
+  ├── DuckDB
+  ├── MinIO
+  └── Power BI
 ```
 
----
+## 🥉 Bronze
 
-# 🥉 Bronze — Données brutes
+Sources principales :
 
-La couche **Bronze** constitue le point d'entrée du pipeline.
+``` text
+athlete_events.csv
+wikidata_olympic.csv
+```
 
-Elle contient les données sources avant les principales transformations.
+## 🥈 Silver
 
-Les principales sources utilisées sont :
+La couche Silver contient les données nettoyées et transformées,
+notamment :
 
-- `athlete_events.csv`
-- `wikidata_olympic.csv`
+-   traitement des valeurs manquantes ;
+-   contrôle des types ;
+-   traitement des doublons ;
+-   préparation à la modélisation.
 
-Cette couche permet de conserver les données dans un état proche de leur forme originale et de disposer d'une base pour les traitements suivants.
+Fichiers principaux :
 
-Les données peuvent également être stockées dans le bucket `bronze` de MinIO.
-
----
-
-# 🥈 Silver — Données nettoyées
-
-La couche **Silver** contient les données après les premières opérations de nettoyage et de transformation.
-
-Les traitements comprennent notamment :
-
-- nettoyage des données ;
-- traitement des valeurs manquantes ;
-- contrôle des types ;
-- traitement des doublons ;
-- préparation des données pour la modélisation analytique.
-
-Les données Silver sont stockées au format **Parquet**, adapté aux traitements analytiques.
-
-Les fichiers principaux sont notamment :
-
-```text
+``` text
 athlete_events_clean.parquet
 wikidata_olympic_clean.parquet
 ```
 
----
+## 🥇 Gold
 
-# 🥇 Gold — Données analytiques
+Le modèle analytique comprend :
 
-La couche **Gold** constitue la couche destinée à l'analyse.
+  Table                 Description
+  --------------------- -------------------------------
+  `DimAthlete`          Informations sur les athlètes
+  `DimSport`            Informations sur les sports
+  `DimOlympics`         Informations sur les éditions
+  `DimCountry`          Informations sur les pays
+  `FactParticipation`   Participations des athlètes
 
-Les données sont organisées selon une logique de **modèle dimensionnel**, avec plusieurs tables de dimensions et une table de faits.
+## 🗄️ DuckDB, Parquet et MinIO
 
-### Dimensions
+DuckDB sert de moteur SQL analytique local.
 
-| Table | Description |
-|---|---|
-| `DimAthlete` | Informations sur les athlètes |
-| `DimSport` | Informations sur les sports |
-| `DimOlympics` | Informations sur les éditions olympiques |
-| `DimCountry` | Informations sur les pays |
+La base utilisée est :
 
-### Table de faits
-
-| Table | Description |
-|---|---|
-| `FactParticipation` | Informations sur les participations des athlètes |
-
-Cette organisation facilite les requêtes analytiques et prépare les données à une utilisation dans un outil de Business Intelligence.
-
----
-
-# 🗄️ DuckDB, Parquet et MinIO
-
-Le projet combine plusieurs technologies complémentaires.
-
-## Parquet
-
-Le format **Parquet** est utilisé pour stocker les données Silver et Gold.
-
-Il permet notamment :
-
-- un stockage orienté colonnes ;
-- une bonne efficacité pour les traitements analytiques ;
-- la conservation des types de données ;
-- une intégration simple avec Pandas et DuckDB.
-
-## DuckDB
-
-**DuckDB** est utilisé comme moteur SQL analytique local.
-
-Il permet notamment de :
-
-- réaliser les transformations SQL ;
-- créer les tables Gold ;
-- effectuer des agrégations ;
-- interroger les données Parquet.
-
-La base DuckDB utilisée par le projet est :
-
-```text
+``` text
 data/olympics.duckdb
 ```
 
-## MinIO
+Les données analytiques sont stockées en Parquet.
 
-**MinIO** est utilisé comme stockage objet compatible avec l'écosystème S3.
+MinIO fournit les buckets :
 
-Le projet utilise trois buckets correspondant aux différentes couches :
-
-```text
+``` text
 bronze
 silver
 gold
 ```
 
-Les résultats de la couche Gold sont notamment stockés dans le bucket `gold` :
+Le bucket Gold contient notamment :
 
-```text
-gold/
-├── DimAthlete.parquet
-├── DimSport.parquet
-├── DimOlympics.parquet
-├── DimCountry.parquet
-└── FactParticipation.parquet
+``` text
+DimAthlete.parquet
+DimSport.parquet
+DimOlympics.parquet
+DimCountry.parquet
+FactParticipation.parquet
 ```
 
----
+## 🧪 Tests et qualité
 
-# 🧪 Tests et qualité des données
+Les tests Pytest couvrent notamment :
 
-La qualité des données est contrôlée automatiquement avec **Pytest**.
+-   colonnes obligatoires ;
+-   doublons ;
+-   types ;
+-   données non vides ;
+-   unicité des identifiants ;
+-   qualité des fichiers Parquet.
 
-Les tests couvrent notamment :
+Exécution :
 
-- présence des colonnes obligatoires ;
-- détection des doublons ;
-- contrôle des types de colonnes ;
-- vérification que les données ne sont pas vides ;
-- contrôle de l'unicité des identifiants ;
-- contrôles sur les fichiers Parquet.
-
-Les tests Parquet utilisent des données de test temporaires afin de pouvoir être exécutés dans un environnement CI sans dépendre des fichiers générés localement.
-
-### Exécuter les tests
-
-```bash
+``` bash
 python3 -m pytest -v
 ```
 
----
+## ⚙️ CI --- GitHub Actions
 
-# ⚙️ CI — GitHub Actions
+GitHub Actions exécute automatiquement les tests sur :
 
-Le projet utilise **GitHub Actions** pour automatiser l'exécution des tests.
+-   `push` ;
+-   `pull request`.
 
-Le workflow est déclenché lors :
+Le workflow installe notamment Python, Pandas, Pytest, PyArrow et
+DuckDB.
 
-- d'un `push` ;
-- d'une `pull request`.
+Commande exécutée :
 
-L'environnement CI installe notamment :
-
-```text
-Python
-Pandas
-Pytest
-PyArrow
-DuckDB
-```
-
-Puis exécute :
-
-```bash
+``` bash
 python -m pytest -v
 ```
 
-Le projet utilise également un workflow Git basé sur les branches et les Pull Requests :
+## 📊 Dashboard Power BI
 
-```text
-main
- │
- └── feature/...
-       │
-       ├── développement
-       ├── tests
-       └── commit
-             │
-             ▼
-       Pull Request
-             │
-             ▼
-       GitHub Actions
-             │
-          Tests OK
-             │
-             ▼
-           main
+Le modèle Power BI utilise :
+
+``` text
+DimAthlete
+DimSport
+DimOlympics
+DimCountry
+FactParticipation
 ```
 
----
+Les relations suivent une logique de modèle en étoile.
 
-# 🛠️ Technologies utilisées
+### Mesures DAX
 
-| Technologie | Utilisation |
-|---|---|
-| **Python** | Développement du pipeline |
-| **Pandas** | Manipulation et transformation des données |
-| **SQL** | Transformations et analyses |
-| **DuckDB** | Moteur analytique et modélisation |
-| **Parquet** | Stockage des données analytiques |
-| **MinIO** | Stockage objet compatible S3 |
-| **Pytest** | Tests automatisés |
-| **PyArrow** | Support du format Parquet |
-| **Git / GitHub** | Gestion du code source |
-| **GitHub Actions** | Intégration continue |
-| **Power BI** | Visualisation — à venir |
+``` dax
+Total Participations =
+COUNTROWS(FactParticipation)
+```
 
----
+``` dax
+Total Athletes =
+DISTINCTCOUNT(FactParticipation[athlete_id])
+```
 
-# 📁 Structure du projet
+``` dax
+Total Medals =
+CALCULATE(
+    COUNTROWS(FactParticipation),
+    FactParticipation[Medal] <> BLANK()
+)
+```
 
-```text
+### 📈 Page 1 --- Vue d'ensemble
+
+La page présente les KPI de participations, athlètes et médailles,
+l'évolution des participations par année et le Top 10 des pays par
+médailles.
+
+![Dashboard Power BI --- Vue d'ensemble](data/capturePage1.png)
+
+### 📊 Page 2 --- Analyse détaillée
+
+La seconde page présente les médailles par sport, la répartition des
+participations par sexe, les participations selon la saison et un filtre
+par année.
+
+![Dashboard Power BI --- Analyse détaillée](data/capturePage2.png)
+
+## 🛠️ Technologies
+
+  Technologie      Utilisation
+  ---------------- -----------------------------
+  Python           Pipeline Data Engineering
+  Pandas           Transformation des données
+  SQL              Transformations et analyses
+  DuckDB           Moteur analytique
+  Parquet          Stockage analytique
+  MinIO            Stockage objet
+  Pytest           Tests
+  PyArrow          Support Parquet
+  Git / GitHub     Versionnement
+  GitHub Actions   CI
+  Power BI         Visualisation
+  DAX              Mesures analytiques
+
+## 📁 Structure
+
+``` text
 data-lakehouse-portfolio/
-│
 ├── data/
-│   ├── athlete_events.csv
-│   ├── wikidata_olympic.csv
-│   ├── athlete_events_clean.parquet
-│   ├── wikidata_olympic_clean.parquet
-│   └── olympics.duckdb
-│
 ├── scripts/
 │   ├── bronze_ingestion.py
 │   ├── silver_processing.py
@@ -314,176 +225,117 @@ data-lakehouse-portfolio/
 │   ├── analytics_queries.py
 │   ├── queries.sql
 │   └── utils.py
-│
 ├── tests/
 │   ├── test_transformations.py
 │   ├── test_data_quality.py
 │   └── test_parquet_quality.py
-│
+├── powerbi/
+│   └── olympics_dashboard.pbix
+├── docs/
+│   ├── dashboard_page1.png
+│   └── dashboard_page2.png
 ├── .github/
 │   └── workflows/
 │       └── tests.yml
-│
 ├── .gitignore
 └── README.md
 ```
 
-> Les fichiers Parquet et DuckDB générés localement ne sont pas destinés à être versionnés dans Git. Les résultats générés sont notamment stockés dans MinIO.
+> Les fichiers Parquet et DuckDB générés localement ne sont pas destinés
+> à être versionnés dans Git.
 
----
+## 🚀 Installation
 
-# 🚀 Installation
+### Prérequis
 
-## Prérequis
+-   Python 3
+-   Git
+-   MinIO
 
-Le projet nécessite :
+### Cloner le projet
 
-- Python 3 ;
-- Git ;
-- un serveur MinIO ;
-- les dépendances Python du projet.
-
-## 1. Cloner le projet
-
-```bash
+``` bash
 git clone https://github.com/alimahha/data-lakehouse-portfolio.git
 cd data-lakehouse-portfolio
 ```
 
-## 2. Créer un environnement virtuel
+### Environnement virtuel
 
-```bash
+``` bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## 3. Installer les dépendances
+### Dépendances
 
-```bash
+``` bash
 python -m pip install --upgrade pip
 pip install pandas pyarrow duckdb pytest minio
 ```
 
----
+## 🗃️ Configuration MinIO
 
-# 🗃️ Configuration de MinIO
+Créer les buckets :
 
-Le projet utilise trois buckets :
-
-```text
-bronze
-silver
-gold
-```
-
-Avec le client MinIO (`mc`), ils peuvent être créés avec :
-
-```bash
+``` bash
 mc mb local/bronze
 mc mb local/silver
 mc mb local/gold
 ```
 
-Vérifier les buckets :
+Vérifier :
 
-```bash
+``` bash
 mc ls local
 ```
 
-Le serveur MinIO doit être démarré avant l'exécution des traitements nécessitant le stockage objet.
+## ▶️ Exécution
 
----
+### Bronze
 
-# ▶️ Exécution du pipeline
-
-Les différents traitements sont organisés dans le dossier `scripts/`.
-
-## Bronze
-
-```bash
+``` bash
 python3 scripts/bronze_ingestion.py
 ```
 
-## Silver
+### Silver
 
-```bash
+``` bash
 python3 scripts/silver_processing.py
 ```
 
-## Gold
+### Gold
 
-```bash
+``` bash
 python3 scripts/gold_processing.py
 ```
 
-Le traitement Gold génère notamment :
+## 🎯 Compétences mises en pratique
 
-```text
-DimAthlete.parquet
-DimSport.parquet
-DimOlympics.parquet
-DimCountry.parquet
-FactParticipation.parquet
-```
+-   architecture Medallion ;
+-   pipeline Data Engineering ;
+-   Python et SQL ;
+-   Parquet ;
+-   DuckDB ;
+-   MinIO ;
+-   modélisation dimensionnelle ;
+-   qualité des données ;
+-   Pytest ;
+-   GitHub Actions ;
+-   Power BI ;
+-   DAX.
 
-Ces fichiers sont ensuite envoyés dans le bucket `gold` de MinIO.
+## 🔮 Évolutions possibles
 
----
+-   industrialisation sur le Cloud ;
+-   Data Lake Cloud ;
+-   orchestration ;
+-   contrôles de qualité avancés ;
+-   nouvelles sources ;
+-   automatisation du déploiement ;
+-   intégration possible avec Azure, Databricks ou Dataiku.
 
-# 🧪 Exécuter les tests
-
-Pour exécuter l'ensemble des tests :
-
-```bash
-python3 -m pytest -v
-```
-
----
-
-# 📊 Analyse et visualisation
-
-La couche Gold constitue la base analytique du projet.
-
-Les données peuvent être exploitées avec :
-
-- DuckDB ;
-- SQL ;
-- Pandas ;
-- Power BI.
-
-### Power BI — prochaine évolution
-
-Une couche de visualisation sera ajoutée afin de permettre l'analyse :
-
-- des participations olympiques ;
-- des athlètes ;
-- des sports ;
-- des pays ;
-- des médailles ;
-- de l'évolution des participations selon les éditions.
-
----
-
-# 🎯 Objectifs du projet
-
-Ce projet permet de mettre en pratique plusieurs compétences en Data Engineering :
-
-- conception d'un pipeline de données ;
-- architecture Medallion ;
-- ingestion et transformation de données ;
-- Python et SQL ;
-- stockage au format Parquet ;
-- moteur analytique DuckDB ;
-- stockage objet avec MinIO ;
-- modélisation dimensionnelle ;
-- tests de qualité des données ;
-- intégration continue avec GitHub Actions ;
-- préparation des données pour la visualisation.
-
----
-
-# 👤 Auteurs
+## 👤 Auteurs
 
 **Ali Mahha**
 
-Projet académique — Data Lakehouse & Data Engineering
+Projet Personnel --- Data Lakehouse & Data Engineering
