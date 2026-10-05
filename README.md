@@ -482,17 +482,6 @@ Ce projet permet de mettre en pratique plusieurs compétences en Data Engineerin
 
 ---
 
-# 🔮 Évolutions prévues
-
-- [ ] Création du dashboard Power BI
-- [ ] Ajout de mesures DAX
-- [ ] Ajout de captures du dashboard dans le README
-- [ ] Ajout d'un schéma graphique de l'architecture
-- [ ] Enrichissement des analyses SQL
-- [ ] Amélioration continue des contrôles de qualité
-
----
-
 # 👤 Auteurs
 
 **Ali Mahha**
